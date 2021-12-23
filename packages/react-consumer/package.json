@@ -4,6 +4,8 @@
   "private": true,
   "dependencies": {
     "@apollo/client": "^3.5.6",
+    "@pact-foundation/pact": "^9.17.0",
+    "@pact-foundation/pact-node": "^10.17.1",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
@@ -20,7 +22,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "eject": "react-scripts eject",
-    "test": "react-scripts test"
+    "test": "react-scripts test",
+    "test:pact": "CI=true react-scripts test --testTimeout 30000 pact.spec.js"
   },
   "eslintConfig": {
     "extends": [
