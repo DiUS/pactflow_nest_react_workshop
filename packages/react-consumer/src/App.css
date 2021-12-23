@@ -1,0 +1,23 @@
+body {
+  padding: 0 30px;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  padding: 40px;
+  margin: 0 auto;
+  border-bottom: 1px solid #ddd;
+}
+
+.game-gallery {
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.game {
+  margin: 0 20px;
+}

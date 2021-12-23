@@ -1,7 +1,15 @@
 {
-  "name": "root",
+  "name": "pactflow-workshop",
   "private": true,
   "devDependencies": {
+    "concurrently": "^6.5.1",
     "lerna": "^3.13.4"
-  }
+  },
+  "scripts": {
+    "start": "concurrently \"yarn:start-consumer\" \"yarn:start-provider\"",
+    "start-consumer": "lerna run --scope react-consumer start",
+    "start-provider": "lerna run --scope nest-provider start:dev",
+    "clean": "lerna clean"
+  },
+  "packageManager": "yarn@3.1.1"
 }

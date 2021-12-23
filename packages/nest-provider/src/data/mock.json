@@ -1,0 +1,52 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Heathstone",
+      "type": "TCG",
+      "url": "https://content.api.news/v3/images/bin/c316d90c344632190cbd595a42ac44ad",
+      "reviews": [
+        {
+          "rating": 5,
+          "comment": "Great game!"
+        },
+        {
+          "rating": 4,
+          "comment": "Good game!"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Starcraft",
+      "type": "STG",
+      "url": "https://bnetcmsus-a.akamaihd.net/cms/blog_thumbnail/ay/AYJ0P9WLD7IP1602720127239.jpg",
+      "reviews": [
+        {
+          "rating": 5,
+          "comment": "Best!"
+        },
+        {
+          "rating": 5,
+          "comment": "Addictive!"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "World of Warcraft",
+      "type": "MMORPG",
+      "url": "https://thumbor.forbes.com/thumbor/960x0/https%3A%2F%2Fblogs-images.forbes.com%2Finsertcoin%2Ffiles%2F2014%2F08%2Fworld-of-warcraft.jpg",
+      "reviews": [
+        {
+          "rating": 5,
+          "comment": "Unbeatable!"
+        },
+        {
+          "rating": 5,
+          "comment": "Just so addictive!"
+        }
+      ]
+    }
+  ]
+}
