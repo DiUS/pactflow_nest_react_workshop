@@ -24,9 +24,9 @@ const App = () => {
   
   // REST API call
   useEffect(() => {
-    const gameAPI = new API('http://localhost:4000');
+    const api = new API('http://localhost:4000');
     (async () => {
-      const res = await gameAPI.getGames();
+      const res = await api.getGames();
       return res;
     })();
   }, [])
