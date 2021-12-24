@@ -3,7 +3,7 @@
 ## Introduction
 This workshop is aimed at demonstrating core features and benefits of contract testing with Pactflow and contract testing.
 
-This workshop should take from 2 to 3 hours, depending on how deep you want to go into each topic.And it is fully self-driven so you can just follow each step to finish it at your pace.
+This workshop should take from 1 to 2 hours, depending on how deep you want to go into each topic.And it is fully self-driven so you can just follow each step to finish it at your pace.
 
 **Workshop outline**
 - [Step 1: Setup environment](#step-1---setup-environment) create consumer and provider apps. 
@@ -93,7 +93,7 @@ export class API {
   }
 
   async getGames() {
-    const res = await axios.get(this.withPath('/games')).then((r) => r.data);
+    const res = await axios.get(this.withPath('/game')).then((r) => r.data);
     return res;
   }
 }
@@ -144,7 +144,7 @@ describe("API Pact test Game API - REST", () => {
         uponReceiving: "get all games",
         withRequest: {
           method: "GET",
-          path: "/games",
+          path: "/game",
         },
         willRespondWith: {
           status: 200,
