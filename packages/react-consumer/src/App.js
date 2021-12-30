@@ -1,26 +1,12 @@
 /* eslint-disable no-unused-expressions */
 import { React, useEffect } from "react";
-import { useQuery, gql } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import { API } from './api';
+import { GET_GAMES_QUERY } from './graphql/query';
 import './App.css';
 
 const App = () => {
-  const { loading, error, data } = useQuery(gql`
-    query Games {
-      games {
-        data {
-          id
-          name
-          url
-          reviews {
-            rating
-            comment
-          }
-          type
-        }
-      }
-    }
-  `);
+  const { loading, error, data } = useQuery(GET_GAMES_QUERY);
   
   // REST API call
   useEffect(() => {

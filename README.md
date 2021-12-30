@@ -8,6 +8,7 @@ This workshop should take from 1 to 2 hours, depending on how deep you want to g
 **Workshop outline**
 - [Step 1: Setup environment](#step-1---setup-environment) create consumer and provider apps. 
 - [Step 2 - Add consumer tests - REST API](#step-2---add-consumer-tests---rest-api) Add the first consumer test for REST API.
+- [Step 3 - Add consumer tests - GraphQL](#step-3---add-consumer-tests---graphql) Add the consumer test for GraphQL endpoint.
 
 *NOTE: Each step is tied to, and must be run within, a git branch, allowing you to progress through each stage incrementally. For example, to move to a specific, you can run the following: `git checkout [step_index]`*
 
@@ -193,3 +194,163 @@ Snapshots:   0 total
 Time:        15.462 s
 Ran all test suites matching /pact.spec.js/i.
 ```
+
+You can run `git checkout step2/add-consumer-rest-test` to complete this step too.
+
+## Step 3 - Add consumer tests - GraphQL
+Okay, if everything goes well with the above steps, we are pretty much set up at the consumer side. However, accordingly to the API usage, most of the requests at Brighte are via GraphQL endpoints. Let's add the GraphQL Pact tests now.
+
+To avoid testing the UI and component logic, instead of testing `useQuery()` React hooks in Pact, we have to extract its business logic and test it independently. 
+
+Let's create a folder `/graphql` to store all the queries and mutations, and add a file `query.js` inside. Then, you can copy the query from `App.js`, so the file looks like:
+```
+import { gql } from "@apollo/client";
+
+const GET_GAMES_QUERY = gql`
+  query Games {
+      games {
+        data {
+          id
+          name
+          url
+          reviews {
+            rating
+            comment
+          }
+          type
+        }
+      }
+    }
+`;
+
+export {
+  GET_GAMES_QUERY,
+};
+```
+
+And you can replace the code of `App.js` with the above query:
+```
+import { GET_GAMES_QUERY } from './graphql/query';
+...
+const { loading, error, data } = useQuery(GET_GAMES_QUERY);
+```
+
+Once the above is done, we can add a new file `/src/pact/graphql.pact.spec.js` and add the following config of Pact instance at the top:
+```
+const provider = new Pact({
+  consumer: "YOUR_CONSUMER_NAME",
+  provider: "YOUR_PROVIDER_NAME",
+  log: path.resolve(process.cwd(), "logs", "pact.log"),
+  logLevel: "warn",
+  dir: path.resolve(process.cwd(), "pacts"),
+  spec: 2,
+  pactfileWriteMode: 'merge',
+});
+```
+The code should be very similar to step 2, but we've added `pactfileWriteMode: 'merge'` here. Because if you run pact testing with multiple files, they can run in parallel and the final output file will be override by whichever test file runs last. With this option set to `merge`, it will combine multiple pact test output into one pact file when it finishes testing.
+
+Then you can add the following test for POST `/graphql` endpoint:
+```
+describe("API Pact test Game API - GraphQL", () => {
+  let client;
+
+  beforeAll(async () => {
+    await provider.setup();
+    client = new ApolloClient({
+      link: new HttpLink({
+        uri: `${provider.mockService.baseUrl}/graphql`,
+        fetch,
+      }),
+      cache: new InMemoryCache({ addTypename: false }),
+    });
+  });
+
+  afterEach(async () => {
+    await provider.verify();
+  });
+
+  afterAll(async () => {
+    await provider.finalize();
+    client.stop();
+  });
+
+  test("games exists", async () => {
+    const expectedResult = {
+      id: 1,
+      name: "Heathstone",
+      type: "TCG",
+      url: "https://content.api.news/v3/images/bin/c316d90c344632190cbd595a42ac44ad",
+      reviews: [
+        {
+          rating: 5,
+          comment: "Great game!",
+        },
+        {
+          rating: 4,
+          comment: "Good game!",
+        },
+      ]
+    };
+
+    const graphqlQuery = new GraphQLInteraction()
+      .uponReceiving("get games query")
+      .withQuery(print(GET_GAMES_QUERY))
+      .withOperation("Games")
+      .withVariables({})
+      .withRequest({
+        path: "/graphql",
+        method: "POST",
+      })
+      .willRespondWith({
+        status: 200,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: {
+          data: {
+            games: {
+              data: eachLike(expectedResult),
+            },
+          },
+        },
+      });
+
+    provider.addInteraction(graphqlQuery);
+
+    const res = await client.query({
+      query: GET_GAMES_QUERY,
+      variables: {},
+    });
+    expect(res.data.games.data).toStrictEqual([expectedResult]);
+  });
+});
+```
+A few things to be noticed here:
+
+- We are calling `new GraphQLInteraction()` to add a GraphQL interaction to Pact test. It comes with some functions like `withQuery()`, `withVariables()`, etc to set the GraphQL queries and inputs.
+- Initalise the apolloClient instance before the test:
+```
+client = new ApolloClient({
+  link: new HttpLink({
+    uri: `${provider.mockService.baseUrl}/graphql`,
+    fetch,
+  }),
+  cache: new InMemoryCache({ addTypename: false }),
+});
+```
+- Set test query with `print()` in the GraphQL interaction
+
+If everything goes well, you can run `yarn test:pact` again and see the result:
+```console
+❯ yarn test:pact
+PASS src/pact/api.pact.spec.js (5.071 s)
+PASS src/pact/graphql.pact.spec.js (5.25 s)
+
+Test Suites: 2 passed, 2 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        6.998 s
+Ran all test suites matching /pact.spec.js/i.
+```
+And if you go to `/pacts` folder you should see the generated pact file with both REST and GraphQL tests inside.
+
