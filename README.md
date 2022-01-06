@@ -475,12 +475,12 @@ The test has failed, as the expected path GET /game is returning 404.
 
 The correct endpoint which the consumer should call is GET /games.
 
-# Step 5 - Back to the client we go
+## Step 5 - Back to the client we go
 We now need to update the consumer client and tests to hit the correct api path.
 
 First, we need to update the GET route for the client:
 
-In react-consumer/src/api.js:
+In `react-consumer/src/api.js`:
 ```
 async getGames() {
   const res = await axios.get(this.withPath('/games')).then((r) => r.data);
@@ -490,7 +490,7 @@ async getGames() {
 
 Then we need to update the Pact test to use the correct endpoint in path.
 
-In react-consumer/src/pact/api.pact.spec.js:
+In `react-consumer/src/pact/api.pact.spec.js`:
 ```
 await provider.addInteraction({
   state: "games exist",
@@ -534,3 +534,159 @@ Ran all test suites.
 Jest did not exit one second after the test run has completed.
 ```
 Yay - green ✅!
+
+## Step 6 - Add error scenario
+What happens when we make a call for the endpoint that doesn't exist? We assume we'll get a 404.
+
+Let's write a test for these scenarios, and then generate an updated pact file.
+
+In `nest-provider/src/game/game.service.ts` we add a new function to fetch a single game:
+```
+async getGame (id: number): Promise<Game> {
+  const game = gamesData.data.find(game => game.id == id);
+  return game;
+}
+```
+And add a new route to `nest-provider/src/game/game.controller.ts`:
+```
+@Get('game/:id')
+async getGame(@Param('id') id: number) {
+  const res = await this.gameService.getGame(id);
+  if (!res || res === {}) {
+    throw new HttpException('Invalid game', HttpStatus.BAD_REQUEST);
+  }
+  return res;
+}
+```
+
+In `react-consumer/src/api.js` add the following method:
+```
+async getGame(id) {
+  const res = await axios.get(this.withPath(`/game/${id}`)).then((r) => r.data);
+  return res;
+}
+```
+
+In `react-consumer/src/pact/api.pact.spec.js` we add a new interaction to handle the error:
+```
+describe('get one game', () => {
+  test("game does not exist", async () => {
+    // set up Pact interactions
+    await provider.addInteraction({
+      state: 'game with id 3 does not exist',
+      uponReceiving: 'get game with id 3',
+      withRequest: {
+        method: 'GET',
+        path: '/game/3'
+      },
+      willRespondWith: {
+        status: 404
+      },
+    });
+
+    const gameAPI = new API(provider.mockService.baseUrl);
+
+    // make request to Pact mock server
+    await expect(gameAPI.getGame(3)).rejects.toThrow('Request failed with status code 404');
+  });
+})
+```
+
+After you've done every change above, you can run pact test in the terminal now to generate a new pact file (you can remove the old one manually):
+```console
+> yarn test:pact
+PASS src/pact/api.pact.spec.js
+PASS src/pact/graphql.pact.spec.js
+
+Test Suites: 2 passed, 2 total
+Tests:       3 passed, 3 total
+Snapshots:   0 total
+Time:        4.964 s
+Ran all test suites matching /pact.spec.js/i.
+```
+
+Now if you go back to provider side and run `yarn test:pact`, you should see the following output:
+```console
+FAIL src/game/game.pact.spec.ts (7.641 s)
+  Pact Verification
+    ✕ validates the expectations of ProductService (1317 ms)
+
+  ● Pact Verification › validates the expectations of ProductService
+
+    INFO: Reading pact at /Users/mattyao/Documents/Work/Brighte/pactflow-workshop/packages/react-consumer/pacts/your_consumer-your_provider.json
+
+
+    Verifying a pact between YOUR_CONSUMER and YOUR_PROVIDER
+
+      Given games exist
+        get all games
+          with GET /games
+            returns a response which
+
+              has status code 200
+
+              has a matching body
+
+              includes headers
+
+                "Content-Type" which equals "application/json; charset=utf-8"
+
+      Given game with id 99 does not exist
+
+        get game with id 99
+
+          with GET /game/3
+
+            returns a response which
+
+              has status code 404 (FAILED - 1)
+
+      Get games query
+
+        with POST /graphql
+
+          returns a response which
+
+            has status code 200
+
+            has a matching body
+
+            includes headers
+
+              "Content-Type" which equals "application/json; charset=utf-8"
+
+
+    Failures:
+
+      1) Verifying a pact between YOUR_CONSUMER and YOUR_PROVIDER Given game with id 99 does not exist get game with id 99 with GET /game/3 returns a response which has status code 404
+         Failure/Error: expect(response_status).to eql expected_response_status
+
+           expected: 404
+                got: 200
+
+           (compared using eql?)
+
+
+    3 interactions, 1 failure
+
+
+    Failed interactions:
+
+    * Get game with id 99 given game with id 99 does not exist (to re-run just this interaction, set environment variables PACT_DESCRIPTION="get game with id 99" PACT_PROVIDER_STATE="game with id 99 does not exist")
+
+    WARN: Cannot publish verification for YOUR_CONSUMER as there is no link named pb:publish-verification-results in the pact JSON. If you are using a pact broker, please upgrade to version 2.0.0 or later.
+
+      at ChildProcess.<anonymous> (../node_modules/@pact-foundation/pact-node/src/verifier.ts:275:58)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 1 total
+Snapshots:   0 total
+Time:        7.758 s, estimated 8 s
+Ran all test suites.
+Jest did not exit one second after the test run has completed.
+```
+We expected this failure, because the game we are requesing (id=3) does in fact exist! What we want to test for, is what happens if there is a different state on the Provider. This is what is referred to as "Provider states", and how Pact gets around test ordering and related issues.
+
+We could resolve this by updating our consumer test to use a known non-existent game, but it's worth understanding how Provider states work more generally.
+
+

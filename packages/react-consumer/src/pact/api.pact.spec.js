@@ -54,4 +54,27 @@ describe("API Pact test Game API - REST", () => {
       expect(games).toStrictEqual([expectedResult]);
     });
   });
+
+  describe('get one game', () => {
+    test("game does not exist", async () => {
+      // set up Pact interactions
+      await provider.addInteraction({
+        state: 'game with id 99 does not exist',
+        uponReceiving: 'get game with id 99',
+        withRequest: {
+          method: 'GET',
+          path: '/game/3'
+        },
+        willRespondWith: {
+          status: 404
+        },
+      });
+
+      const gameAPI = new API(provider.mockService.baseUrl);
+
+      // make request to Pact mock server
+      await expect(gameAPI.getGame(3)).rejects.toThrow('Request failed with status code 404');
+    });
+  })
+  
 });
