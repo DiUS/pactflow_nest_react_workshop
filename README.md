@@ -10,6 +10,7 @@ This workshop should take from 1 to 2 hours, depending on how deep you want to g
 - [Step 2 - Add consumer tests - REST API](#step-2---add-consumer-tests---rest-api) Add the first consumer test for REST API.
 - [Step 3 - Add consumer tests - GraphQL](#step-3---add-consumer-tests---graphql) Add the consumer test for GraphQL endpoint.
 - [Step 4 - Verify the provider](#step-4---verify-the-provider) Verify the pact at provider side.
+- [Step 5 - Back to the client we go](#step-5---back-to-the-client-we-go) Fix the consumer test.
 
 *NOTE: Each step is tied to, and must be run within, a git branch, allowing you to progress through each stage incrementally. For example, to move to a specific, you can run the following: `git checkout [step_index]`*
 
@@ -473,3 +474,63 @@ Time:        4.939 s, estimated 5 s
 The test has failed, as the expected path GET /game is returning 404. 
 
 The correct endpoint which the consumer should call is GET /games.
+
+# Step 5 - Back to the client we go
+We now need to update the consumer client and tests to hit the correct api path.
+
+First, we need to update the GET route for the client:
+
+In react-consumer/src/api.js:
+```
+async getGames() {
+  const res = await axios.get(this.withPath('/games')).then((r) => r.data);
+  return res;
+}
+```
+
+Then we need to update the Pact test to use the correct endpoint in path.
+
+In react-consumer/src/pact/api.pact.spec.js:
+```
+await provider.addInteraction({
+  state: "games exist",
+  uponReceiving: "get all games",
+  withRequest: {
+    method: "GET",
+    path: "/games",
+  },
+  willRespondWith: {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+    },
+    body: eachLike(expectedResult),
+  },
+});
+```
+Let's run and generate an updated pact file on the client:
+```console
+> yarn test:pact
+PASS src/pact/graphql.pact.spec.js
+PASS src/pact/api.pact.spec.js
+
+Test Suites: 2 passed, 2 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        6.417 s
+Ran all test suites matching /pact.spec.js/i.
+```
+Now we run the provider tests again with the updated contract, run the command:
+```console
+PASS src/game/game.pact.spec.ts (8.391 s)
+  Pact Verification
+    ✓ validates the expectations of ProductService (1389 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        8.535 s
+Ran all test suites.
+Jest did not exit one second after the test run has completed.
+```
+Yay - green ✅!
