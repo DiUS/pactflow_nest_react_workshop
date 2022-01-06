@@ -43,4 +43,9 @@ export class GameService {
   public clear() {
     this.games = [];
   }
+
+  async getGame (id: number): Promise<Game | {}> {
+    const game = gamesData.data.find(game => game.id == id);
+    return game;
+  }
 }

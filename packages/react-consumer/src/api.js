@@ -25,4 +25,9 @@ export class API {
     const res = await axios.get(this.withPath('/games')).then((r) => r.data);
     return res;
   }
+
+  async getGame(id) {
+    const res = await axios.get(this.withPath(`/game/${id}`)).then((r) => r.data);
+    return res;
+  }
 }
