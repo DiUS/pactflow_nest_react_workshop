@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { GameModule } from './game/game.module';
 
 @Module({
@@ -13,7 +11,5 @@ import { GameModule } from './game/game.module';
       path: 'graphql',
     }),
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

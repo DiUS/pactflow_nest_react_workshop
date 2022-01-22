@@ -11,6 +11,8 @@ This workshop should take from 1 to 2 hours, depending on how deep you want to g
 - [Step 3 - Add consumer tests - GraphQL](#step-3---add-consumer-tests---graphql) Add the consumer test for GraphQL endpoint.
 - [Step 4 - Verify the provider](#step-4---verify-the-provider) Verify the pact at provider side.
 - [Step 5 - Back to the client we go](#step-5---back-to-the-client-we-go) Fix the consumer test.
+- [Step 6 - Handle error scenario](#step-6---add-error-scenario) Add error scenario.
+- [Step 7 - Add missing states](#step-7---add-missing-states) Add missing states at provider.
 
 *NOTE: Each step is tied to, and must be run within, a git branch, allowing you to progress through each stage incrementally. For example, to move to a specific, you can run the following: `git checkout [step_index]`*
 
@@ -689,4 +691,21 @@ We expected this failure, because the game we are requesing (id=3) does in fact 
 
 We could resolve this by updating our consumer test to use a known non-existent game, but it's worth understanding how Provider states work more generally.
 
+## Step 7 - Add missing states
+Our code already deals with missing users and sends a 404 response, however our test data fixture always has game id=3 in our database.
 
+In this step, we will add a `state handler` (stateHandlers) to our provider Pact verifications, which will update the state of our data store depending on which states the consumers require.
+
+States are invoked prior to the actual test function is invoked. You can see the full [lifecycle](https://github.com/pact-foundation/pact-go#lifecycle-of-a-provider-verification) here.
+
+Because Nest.js has its own way of [Dependency Injection (DI)](https://docs.nestjs.com/fundamentals/custom-providers), the set-up following the Pact documentation to use `state handlers` to manage the provider state wouldn't work. 
+
+We are going to reafactor our provider code with the help of the library [nestjs-pact](https://github.com/omermorad/nestjs-pact), which solves a lot of tricky bits using Pact with Nest.js. There are two main modules suggested; one for the Provider role (Verifier), and one for the Consumer role (creating Pact files and publish), each loaded separately. In this step, we will only do the minimum changes to use the provider module.
+
+Firstly, we need to install `nestjs-pact` library:
+
+```console
+> yarn add nestjs-pact
+```
+
+Let's open up our provider Pact verifications in `nest-provider/src/game/game.pact.spec.ts`:
