@@ -1,4 +1,9 @@
-import { Controller, Get, HttpException, HttpStatus, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+} from '@nestjs/common';
 import { GameService } from './game.service';
 
 @Controller()
@@ -12,10 +17,10 @@ export class GameController {
 
   @Get('game/:id')
   async getGame(@Param('id') id: number) {
-    const res = await this.gameService.getGame(id);
-    if (!res || res === {}) {
-      throw new HttpException('Invalid game', HttpStatus.BAD_REQUEST);
+    const response = await this.gameService.getGame(id);
+    if (!response) {
+      throw new NotFoundException('Invalid game')
     }
-    return res;
+    return response;
   }
 }

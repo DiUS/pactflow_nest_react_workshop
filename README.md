@@ -551,11 +551,11 @@ And add a new route to `nest-provider/src/game/game.controller.ts`:
 ```
 @Get('game/:id')
 async getGame(@Param('id') id: number) {
-  const res = await this.gameService.getGame(id);
-  if (!res || res === {}) {
-    throw new HttpException('Invalid game', HttpStatus.BAD_REQUEST);
+  const response = await this.gameService.getGame(id);
+  if (!response) {
+    throw new NotFoundException('Invalid game')
   }
-  return res;
+  return response;
 }
 ```
 

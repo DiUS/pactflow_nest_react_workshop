@@ -16,6 +16,11 @@ export class GameService {
     return this.games;
   }
 
+  public getGame (id: number): Game | null {
+    const game = this.games.find(game => game.id == id);
+    return game;
+  }
+
   public insert(game): Game {
     const newGame = {
       id: this.games.length + 1,
@@ -42,10 +47,5 @@ export class GameService {
 
   public clear() {
     this.games = [];
-  }
-
-  async getGame (id: number): Promise<Game | {}> {
-    const game = gamesData.data.find(game => game.id == id);
-    return game;
   }
 }
