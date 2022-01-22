@@ -5,6 +5,7 @@ import { GamesResolver } from './game.resolver';
 
 @Module({
   controllers: [GameController],
-  providers: [GameService, GamesResolver]
+  providers: [GameService, GamesResolver],
+  exports: [GameService],
 })
 export class GameModule {}

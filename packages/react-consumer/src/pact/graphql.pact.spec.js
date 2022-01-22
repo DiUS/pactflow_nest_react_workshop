@@ -58,6 +58,7 @@ describe("API Pact test Game API - GraphQL", () => {
     };
 
     const graphqlQuery = new GraphQLInteraction()
+      .given("query for games")
       .uponReceiving("get games query")
       .withQuery(print(GET_GAMES_QUERY))
       .withOperation("Games")

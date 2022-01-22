@@ -11,6 +11,11 @@ This workshop should take from 1 to 2 hours, depending on how deep you want to g
 - [Step 3 - Add consumer tests - GraphQL](#step-3---add-consumer-tests---graphql) Add the consumer test for GraphQL endpoint.
 - [Step 4 - Verify the provider](#step-4---verify-the-provider) Verify the pact at provider side.
 - [Step 5 - Back to the client we go](#step-5---back-to-the-client-we-go) Fix the consumer test.
+<<<<<<< HEAD
+=======
+- [Step 6 - Handle error scenario](#step-6---add-error-scenario) Add error scenario.
+- [Step 7 - Add missing states](#step-7---add-missing-states) Add missing states at provider.
+>>>>>>> step7/add-missing-state
 
 *NOTE: Each step is tied to, and must be run within, a git branch, allowing you to progress through each stage incrementally. For example, to move to a specific, you can run the following: `git checkout [step_index]`*
 
@@ -551,11 +556,19 @@ And add a new route to `nest-provider/src/game/game.controller.ts`:
 ```
 @Get('game/:id')
 async getGame(@Param('id') id: number) {
+<<<<<<< HEAD
   const res = await this.gameService.getGame(id);
   if (!res || res === {}) {
     throw new HttpException('Invalid game', HttpStatus.BAD_REQUEST);
   }
   return res;
+=======
+  const response = await this.gameService.getGame(id);
+  if (!response) {
+    throw new NotFoundException('Invalid game')
+  }
+  return response;
+>>>>>>> step7/add-missing-state
 }
 ```
 
@@ -689,4 +702,158 @@ We expected this failure, because the game we are requesing (id=3) does in fact 
 
 We could resolve this by updating our consumer test to use a known non-existent game, but it's worth understanding how Provider states work more generally.
 
+## Step 7 - Add missing states
+Our code already deals with missing users and sends a 404 response, however our test data fixture always has game id=3 in our database.
 
+In this step, we will add a `state handler` (stateHandlers) to our provider Pact verifications, which will update the state of our data store depending on which states the consumers require.
+
+States are invoked prior to the actual test function is invoked. You can see the full [lifecycle](https://github.com/pact-foundation/pact-go#lifecycle-of-a-provider-verification) here.
+
+Because Nest.js has its own way of [Dependency Injection (DI)](https://docs.nestjs.com/fundamentals/custom-providers), the set-up following the Pact documentation to use `state handlers` to manage the provider state wouldn't work. 
+
+We are going to reafactor our provider code with the help of the library [nestjs-pact](https://github.com/omermorad/nestjs-pact), which solves a lot of tricky bits using Pact with Nest.js. There are two main modules suggested; one for the Provider role (Verifier), and one for the Consumer role (creating Pact files and publish), each loaded separately. In this step, we will only do the minimum changes to use the provider module.
+
+Firstly, we need to install `nestjs-pact` library:
+
+```console
+> yarn add nestjs-pact
+```
+
+We need to create some additional files, so let's create a folder under `nest-provider/src/game/pact` and then create a file `pact.service.ts` with in there, with the following content:
+
+```
+import { Injectable } from '@nestjs/common';
+import { PactProviderOptionsFactory, PactProviderOptions } from 'nestjs-pact';
+import { GameService } from '../game.service';
+
+const path = require('path');
+
+@Injectable()
+export class PactProviderConfigOptionsService
+  implements PactProviderOptionsFactory
+{
+  public constructor(private readonly gameService: GameService) {}
+
+  public createPactProviderOptions(): PactProviderOptions {
+    return {
+      logLevel: 'debug',
+      enablePending: true,
+      provider: 'YOUR_PROVIDER',
+      providerVersion: '1.0.0',
+      pactUrls: [
+        path.resolve(__dirname, '../../../../react-consumer/pacts/your_consumer-your_provider.json')
+      ],
+      stateHandlers: {
+        'game with id 3 does not exist': async () => {
+          this.gameService.clear();
+          return 'invalid game id';
+        },
+        'games exist': async () => {
+          this.gameService.importData();
+          return 'all games are returned - REST';
+        },
+        'query for games': async () => {
+          this.gameService.importData();
+          return 'all games are returned - GraphQL';
+        },
+      },
+    };
+  }
+}
+```
+
+Notice here in the `stateHandlers` fields, we've defined three different provider states to align with the generated contact:
+
+- games exist (REST)
+- game with id 3 does not exist (REST)
+- query for games (GraphQL)
+
+Then, we need to create a `pact.module.ts` to inject this service:
+
+```
+import { Module } from '@nestjs/common';
+import { PactProviderModule } from 'nestjs-pact';
+import { PactProviderConfigOptionsService } from './pact.service';
+import { GameService } from '../game.service';
+import { GameModule } from '../game.module';
+
+@Module({
+  imports: [
+    PactProviderModule.registerAsync({
+      imports: [GameModule],
+      useClass: PactProviderConfigOptionsService,
+      inject: [GameService],
+    }),
+  ],
+})
+export class PactModule {}
+```
+
+Lastly, we have to update the provider verification `game.pact.spec.ts`:
+
+```
+import { Test } from '@nestjs/testing';
+import { PactVerifierService } from 'nestjs-pact';
+import { INestApplication, Logger, LoggerService } from '@nestjs/common';
+import { GameModule } from '../game.module';
+import { GameService } from '../game.service';
+import { PactModule } from './pact.module';
+import { GraphQLModule } from '@nestjs/graphql';
+
+jest.setTimeout(30000);
+
+describe('Pact Verification', () => {
+  let verifier: PactVerifierService;
+  let logger: LoggerService;
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        GameModule,
+        PactModule,
+        GraphQLModule.forRoot({
+          autoSchemaFile: true,
+          playground: true,
+          path: '/graphql',
+        }),
+      ],
+      providers: [GameService, Logger],
+    }).compile();
+
+    verifier = moduleRef.get(PactVerifierService);
+    logger = moduleRef.get(Logger);
+
+    app = moduleRef.createNestApplication();
+
+    await app.init();
+  });
+
+  it("Validates the expectations of 'Matching Service'", async () => {
+    const output = await verifier.verify(app);
+
+    logger.log('Pact Verification Complete!');
+    logger.log(output);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+});
+```
+
+And now, if you run provider test again, everything should work now:
+
+```console
+> yarn test:pact
+7.1: Pact Verification succeeded.
+PASS src/game/pact/game.pact.spec.ts (7.81 s)
+  Pact Verification
+    ✓ Validates the expectations of 'Matching Service' (1188 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        7.96 s, estimated 8 s
+Ran all test suites.
+```

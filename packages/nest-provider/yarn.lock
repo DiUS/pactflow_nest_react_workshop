@@ -4527,6 +4527,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"get-port@npm:^5.1.1":
+  version: 5.1.1
+  resolution: "get-port@npm:5.1.1"
+  checksum: 0162663ffe5c09e748cd79d97b74cd70e5a5c84b760a475ce5767b357fb2a57cb821cee412d646aa8a156ed39b78aab88974eddaa9e5ee926173c036c0713787
+  languageName: node
+  linkType: hard
+
 "get-stream@npm:^5.0.0":
   version: 5.2.0
   resolution: "get-stream@npm:5.2.0"
@@ -6470,6 +6477,7 @@ __metadata:
     eslint-plugin-prettier: ^3.4.0
     graphql: ^15.6.0
     jest: ^27.0.6
+    nestjs-pact: ^2.1.1
     prettier: ^2.3.2
     reflect-metadata: ^0.1.13
     rimraf: ^3.0.2
@@ -6482,6 +6490,19 @@ __metadata:
     typescript: ^4.3.5
   languageName: unknown
   linkType: soft
+
+"nestjs-pact@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "nestjs-pact@npm:2.1.1"
+  dependencies:
+    get-port: ^5.1.1
+  peerDependencies:
+    "@nestjs/common": 7.x || 8.x
+    "@nestjs/core": 7.x || 8.x
+    "@pact-foundation/pact": ^9.0.0
+  checksum: 171b8550743cab12daa65285fffe2babc27eb9388f1784514fe33ddbda6743efee0a0b8135ca276e21fa061c47dfa0096c1e818d78698326fffbf74e5d968fd9
+  languageName: node
+  linkType: hard
 
 "next-tick@npm:1, next-tick@npm:^1.1.0":
   version: 1.1.0

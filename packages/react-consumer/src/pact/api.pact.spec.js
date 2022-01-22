@@ -59,8 +59,8 @@ describe("API Pact test Game API - REST", () => {
     test("game does not exist", async () => {
       // set up Pact interactions
       await provider.addInteraction({
-        state: 'game with id 99 does not exist',
-        uponReceiving: 'get game with id 99',
+        state: 'game with id 3 does not exist',
+        uponReceiving: 'get game with id 3',
         withRequest: {
           method: 'GET',
           path: '/game/3'
