@@ -708,4 +708,141 @@ Firstly, we need to install `nestjs-pact` library:
 > yarn add nestjs-pact
 ```
 
-Let's open up our provider Pact verifications in `nest-provider/src/game/game.pact.spec.ts`:
+We need to create some additional files, so let's create a folder under `nest-provider/src/game/pact` and then create a file `pact.service.ts` with in there, with the following content:
+
+```
+import { Injectable } from '@nestjs/common';
+import { PactProviderOptionsFactory, PactProviderOptions } from 'nestjs-pact';
+import { GameService } from '../game.service';
+
+const path = require('path');
+
+@Injectable()
+export class PactProviderConfigOptionsService
+  implements PactProviderOptionsFactory
+{
+  public constructor(private readonly gameService: GameService) {}
+
+  public createPactProviderOptions(): PactProviderOptions {
+    return {
+      logLevel: 'debug',
+      enablePending: true,
+      provider: 'YOUR_PROVIDER',
+      providerVersion: '1.0.0',
+      pactUrls: [
+        path.resolve(__dirname, '../../../../react-consumer/pacts/your_consumer-your_provider.json')
+      ],
+      stateHandlers: {
+        'game with id 3 does not exist': async () => {
+          this.gameService.clear();
+          return 'invalid game id';
+        },
+        'games exist': async () => {
+          this.gameService.importData();
+          return 'all games are returned - REST';
+        },
+        'query for games': async () => {
+          this.gameService.importData();
+          return 'all games are returned - GraphQL';
+        },
+      },
+    };
+  }
+}
+```
+
+Notice here in the `stateHandlers` fields, we've defined three different provider states to align with the generated contact:
+
+- games exist (REST)
+- game with id 3 does not exist (REST)
+- query for games (GraphQL)
+
+Then, we need to create a `pact.module.ts` to inject this service:
+
+```
+import { Module } from '@nestjs/common';
+import { PactProviderModule } from 'nestjs-pact';
+import { PactProviderConfigOptionsService } from './pact.service';
+import { GameService } from '../game.service';
+import { GameModule } from '../game.module';
+
+@Module({
+  imports: [
+    PactProviderModule.registerAsync({
+      imports: [GameModule],
+      useClass: PactProviderConfigOptionsService,
+      inject: [GameService],
+    }),
+  ],
+})
+export class PactModule {}
+```
+
+Lastly, we have to update the provider verification `game.pact.spec.ts`:
+
+```
+import { Test } from '@nestjs/testing';
+import { PactVerifierService } from 'nestjs-pact';
+import { INestApplication, Logger, LoggerService } from '@nestjs/common';
+import { GameModule } from '../game.module';
+import { GameService } from '../game.service';
+import { PactModule } from './pact.module';
+import { GraphQLModule } from '@nestjs/graphql';
+
+jest.setTimeout(30000);
+
+describe('Pact Verification', () => {
+  let verifier: PactVerifierService;
+  let logger: LoggerService;
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        GameModule,
+        PactModule,
+        GraphQLModule.forRoot({
+          autoSchemaFile: true,
+          playground: true,
+          path: '/graphql',
+        }),
+      ],
+      providers: [GameService, Logger],
+    }).compile();
+
+    verifier = moduleRef.get(PactVerifierService);
+    logger = moduleRef.get(Logger);
+
+    app = moduleRef.createNestApplication();
+
+    await app.init();
+  });
+
+  it("Validates the expectations of 'Matching Service'", async () => {
+    const output = await verifier.verify(app);
+
+    logger.log('Pact Verification Complete!');
+    logger.log(output);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+});
+```
+
+And now, if you run provider test again, everything should work now:
+
+```console
+> yarn test:pact
+7.1: Pact Verification succeeded.
+PASS src/game/pact/game.pact.spec.ts (7.81 s)
+  Pact Verification
+    ✓ Validates the expectations of 'Matching Service' (1188 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        7.96 s, estimated 8 s
+Ran all test suites.
+```
