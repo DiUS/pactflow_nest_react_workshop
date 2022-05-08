@@ -12,12 +12,12 @@ export class GameService {
     this.importData();
   }
 
-  public getGames (): Game[] {
+  public getGames(): Game[] {
     return this.games;
   }
 
-  public getGame (id: number): Game | null {
-    const game = this.games.find(game => game.id == id);
+  public getGame(id: number): Game | null {
+    const game = this.games.find((game) => game.id == id);
     return game;
   }
 
@@ -33,24 +33,19 @@ export class GameService {
   }
 
   public importData(): void {
-    const data = (fs.readFileSync(
-      path.resolve("./src/data/mock.json"),
-      "utf-8"
-    ) as unknown) as string
+    const data = fs.readFileSync(
+      path.resolve('./src/data/mock.json'),
+      'utf-8',
+    ) as unknown as string;
 
     JSON.parse(data).reduce((game, value) => {
-      value.id = game + 1
-      this.insert(value)
-      return game + 1
-    }, 0)
+      value.id = game + 1;
+      this.insert(value);
+      return game + 1;
+    }, 0);
   }
 
   public clear() {
     this.games = [];
-  }
-
-  async getGame (id: number): Promise<Game | {}> {
-    const game = gamesData.data.find(game => game.id == id);
-    return game;
   }
 }

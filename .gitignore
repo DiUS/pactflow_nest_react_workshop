@@ -52,3 +52,6 @@ test-reports/
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# pact
+pacts
