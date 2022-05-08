@@ -939,3 +939,7 @@ public createPactProviderOptions(): PactProviderOptions {
     };
   }
 ```
+
+Let's run the provider verification one last time after this change. It should now verifying your contract and update the result in Pactflow.
+
+That's it - you're now not a Pact newbie anymore. Go to the doc site and find out more advanced usage of Pactflow!
