@@ -846,3 +846,96 @@ Snapshots:   0 total
 Time:        7.96 s, estimated 8 s
 Ran all test suites.
 ```
+
+## Step 8 - Publish the contract
+We've been publishing our pacts from the consumer project by essentially sharing the file system with the provider. But this is not very manageable when you have multiple teams contributing to the code base, and pushing to CI. We can use a [Pactflow](https://pactflow.io/) to do this instead.
+
+If you are not familiar with Pactflow, please check their awesome docs on the website. In general, it is a SaaS platform that solves the complex challenges of testing micro-services and API integrations allowing companies with multiple development teams to orchestrate contract testing at scale. Using a hosted pact broker with Pactflow, will allow you to concentrate on testing your application without having to worry about managing infrastructure, along with a number of other useful [features](https://pactflow.io/features).
+
+Alternatively, you can achieve to publish the pact contract with the OSS [Pact Broker](https://github.com/pact-foundation/pact_broker). But in this workshop example, we will learn how to use Pactflow to manage this.
+
+### Create a Pactflow account
+
+Create a new [Pactflow](https://pactflow.io/pricing) account and signup to the free Starter Plan. You will be emailed a set of credentials to access your account, these credentials are only for accessing the UI.
+
+Grab your [API Token](https://docs.pactflow.io/#configuring-your-api-token)(Click on settings -> API Tokens -> Read/write token -> COPY ENV VARS) and set the environment variables in your terminal as follows:
+
+![API Token](diagrams/pactflow_token.jpg)
+
+```
+export PACT_BROKER_BASE_URL=https://<your_broker_name>.pactflow.io
+export PACT_BROKER_TOKEN=exampleToken
+```
+
+### Update your scripts to use the pact broker token based authentication method
+
+First, let's update the authentication in `react-consumer` and add `publish.pact.js`. 
+
+```
+import { execSync } from 'child_process';
+import { resolve } from 'path';
+import pact from '@pact-foundation/pact-node';
+
+const { publishPacts } = pact;
+const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+const gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+
+const pactBrokerUrl = 'YOUR_PACFLOW_URL'; // your pactflow url, usually it is {YOUR_DOMAIN}.pact.io
+
+const opts = {
+  pactFilesOrDirs: [resolve(process.cwd(), 'pacts')],
+  pactBroker: pactBrokerUrl,
+  pactBrokerToken: 'PACTFLOW_TOKEN', // copy the API token and put it here
+  tags: ['prod', 'test'],
+  consumerVersion: gitHash,
+  branch,
+};
+
+publishPacts(opts).catch((e) => {
+  console.error(`Pact contract publishing failed at ${pactBrokerUrl}: `, e);
+});
+
+```
+
+Then, you will need to add the command to run publish in `react-consumer/package.json -> scripts`:
+
+```
+   "publish:pact": "node publish.pact.js"
+```
+
+Note in this example we simply copy and paste the API token to the script, which works as expected. However, in the real world it is not safe to keep the API token in your source code. The best practice is to store them in the CI environment as the encrypted variables and load them into the code.
+
+Now you can run `yarn publish:pact` in the terminal, if everything above is set up correctly, you should see the following output:
+
+```console
+yarn publish:pact
+pact-node@10.17.1: Publishing Pacts to Broker
+Publishing pacts to broker at: https://{YOUR_DOMAIN}.pactflow.io
+Created YOUR_CONSUMER version abcde123 with tags prod, test
+  Next steps:
+    Configure the version branch to be the value of your repository branch.
+Pact successfully published for YOUR_CONSUMER version abcde123 and provider YOUR_PROVIDER.
+  View the published pact at https://{YOUR_DOMAIN}.pactflow.io/pacts/provider/YOUR_PROVIDER/consumer/YOUR_CONSUMER/version/abcde123
+  Events detected: contract_published, contract_content_changed (first time any pact published for this consumer with consumer version tagged prod, first time any pact published for this consumer with consumer version tagged test)
+  Next steps:
+    * Add Pact verification tests to the YOUR_PROVIDER build. See https://docs.pact.io/go/provider_verification
+    * Configure separate YOUR_PROVIDER pact verification build and webhook to trigger it when the pact content changes. See https://docs.pact.io/go/webhooks
+```
+
+And now login to your Pactflow account, you will see the pact contract has been uploaded successfully but is "Unverified":
+
+![Pact upload](diagrams/pactflow_publish.jpg)
+
+### Verify contracts on Provider
+You've completed the consumer side tasks and it is time to look at the provider now. Let's go to `package/nest-provider/src/game/pact/pact.service.ts` and update the pact options as the following:
+
+```
+public createPactProviderOptions(): PactProviderOptions {
+    return {
+      ... // copy from the previous step
+      pactBrokerUrl: 'https://{YOUR_DOMAIN}.pactflow.io',
+      pactBrokerToken: 'YOUR_API_TOKEN',
+      ...
+    };
+  }
+```

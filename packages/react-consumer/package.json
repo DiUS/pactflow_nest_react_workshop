@@ -23,7 +23,9 @@
     "build": "react-scripts build",
     "eject": "react-scripts eject",
     "test": "react-scripts test",
-    "test:pact": "CI=true react-scripts test --testTimeout 30000 pact.spec.js"
+    "test:pact": "CI=true react-scripts test --testTimeout 30000 pact.spec.js",
+    "publish:pact": "node publish.pact.js"
+
   },
   "eslintConfig": {
     "extends": [

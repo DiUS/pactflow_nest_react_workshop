@@ -16,9 +16,8 @@ export class PactProviderConfigOptionsService
       enablePending: true,
       provider: 'YOUR_PROVIDER',
       providerVersion: '1.0.0',
-      pactUrls: [
-        path.resolve(__dirname, '../../../../react-consumer/pacts/your_consumer-your_provider.json')
-      ],
+      pactBrokerUrl: 'https://{YOUR_DOMAIN}.pactflow.io',
+      pactBrokerToken: '',
       stateHandlers: {
         'game with id 3 does not exist': async () => {
           this.gameService.clear();
