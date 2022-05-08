@@ -11,11 +11,8 @@ This workshop should take from 1 to 2 hours, depending on how deep you want to g
 - [Step 3 - Add consumer tests - GraphQL](#step-3---add-consumer-tests---graphql) Add the consumer test for GraphQL endpoint.
 - [Step 4 - Verify the provider](#step-4---verify-the-provider) Verify the pact at provider side.
 - [Step 5 - Back to the client we go](#step-5---back-to-the-client-we-go) Fix the consumer test.
-<<<<<<< HEAD
-=======
 - [Step 6 - Handle error scenario](#step-6---add-error-scenario) Add error scenario.
 - [Step 7 - Add missing states](#step-7---add-missing-states) Add missing states at provider.
->>>>>>> step7/add-missing-state
 
 *NOTE: Each step is tied to, and must be run within, a git branch, allowing you to progress through each stage incrementally. For example, to move to a specific, you can run the following: `git checkout [step_index]`*
 
@@ -556,19 +553,11 @@ And add a new route to `nest-provider/src/game/game.controller.ts`:
 ```
 @Get('game/:id')
 async getGame(@Param('id') id: number) {
-<<<<<<< HEAD
-  const res = await this.gameService.getGame(id);
-  if (!res || res === {}) {
-    throw new HttpException('Invalid game', HttpStatus.BAD_REQUEST);
-  }
-  return res;
-=======
   const response = await this.gameService.getGame(id);
   if (!response) {
     throw new NotFoundException('Invalid game')
   }
   return response;
->>>>>>> step7/add-missing-state
 }
 ```
 
