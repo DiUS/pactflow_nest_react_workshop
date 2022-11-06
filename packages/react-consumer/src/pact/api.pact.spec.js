@@ -36,7 +36,7 @@ describe("API Pact test Game API - REST", () => {
         uponReceiving: "get all games",
         withRequest: {
           method: "GET",
-          path: "/games",
+          path: "/game",
         },
         willRespondWith: {
           status: 200,

@@ -22,7 +22,7 @@ export class API {
   }
 
   async getGames() {
-    const res = await axios.get(this.withPath('/games')).then((r) => r.data);
+    const res = await axios.get(this.withPath('/game')).then((r) => r.data);
     return res;
   }
 }
