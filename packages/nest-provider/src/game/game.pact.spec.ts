@@ -1,34 +1,48 @@
-const { Verifier, VerifierOptions } = require('@pact-foundation/pact');
-const path = require('path');
-const { bootstrap } = require('../main');
+import { Test } from '@nestjs/testing';
+import { PactVerifierService } from 'nestjs-pact';
+import { INestApplication, Logger, LoggerService } from '@nestjs/common';
+import { GameModule } from './game.module';
+import { GameService } from './game.service';
+import { PactModule } from './pact/pact.module';
+import { GraphQLModule } from '@nestjs/graphql';
 
-// Setup provider server to verify
-let app;
-(async() => {
-  app = await bootstrap(3999);
-})();
-
-const opts: typeof VerifierOptions = {
-  logLevel: 'info',
-  providerBaseUrl: 'http://localhost:3999',
-  provider: 'YOUR_PROVIDER',
-  providerVersion: '1.0.0',
-  pactUrls: [
-      path.resolve(__dirname, '../../../react-consumer/pacts/your_consumer-your_provider.json')
-  ]
-};
+jest.setTimeout(30000);
 
 describe('Pact Verification', () => {
-    it('validates the expectations of ProductService', () => {
-        if (process.env.CI || process.env.PACT_PUBLISH_RESULTS) {
-            Object.assign(opts, {
-                publishVerificationResult: true,
-            });
-        }
-        return new Verifier(opts).verifyProvider().then(output => {
-          console.log(output);
-        }).finally(() => {
-          app.close();
-        });
-    })
+  let verifier: PactVerifierService;
+  let logger: LoggerService;
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        GameModule,
+        PactModule,
+        GraphQLModule.forRoot({
+          autoSchemaFile: true,
+          playground: true,
+          path: '/graphql',
+        }),
+      ],
+      providers: [GameService, Logger],
+    }).compile();
+
+    verifier = moduleRef.get(PactVerifierService);
+    logger = moduleRef.get(Logger);
+
+    app = moduleRef.createNestApplication();
+
+    await app.init();
+  });
+
+  it("Validates the expectations of 'Matching Service'", async () => {
+    const output = await verifier.verify(app);
+
+    logger.log('Pact Verification Complete!');
+    logger.log(output);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
 });
