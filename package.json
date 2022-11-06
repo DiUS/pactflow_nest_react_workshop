@@ -11,5 +11,5 @@
     "start-provider": "lerna run --scope nest-provider start:dev",
     "clean": "lerna clean"
   },
-  "packageManager": "yarn@3.1.1"
+  "packageManager": "yarn@3.2.4"
 }
