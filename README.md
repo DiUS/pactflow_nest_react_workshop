@@ -6,7 +6,7 @@ This workshop is aimed at demonstrating core features and benefits of contract t
 This workshop should take from 1 to 2 hours, depending on how deep you want to go into each topic.And it is fully self-driven so you can just follow each step to finish it at your pace.
 
 **Workshop outline**
-- [Step 1: Setup environment](#step-1---setup-environment) create consumer and provider apps. 
+- [Step 1 - Setup environment](#step-1---setup-environment) create consumer and provider apps. 
 - [Step 2 - Add consumer tests - REST API](#step-2---add-consumer-tests---rest-api) Add the first consumer test for REST API.
 - [Step 3 - Add consumer tests - GraphQL](#step-3---add-consumer-tests---graphql) Add the consumer test for GraphQL endpoint.
 - [Step 4 - Verify the provider](#step-4---verify-the-provider) Verify the pact at provider side.
@@ -935,10 +935,15 @@ public createPactProviderOptions(): PactProviderOptions {
       ... // copy from the previous step
       pactBrokerUrl: 'https://{YOUR_DOMAIN}.pactflow.io',
       pactBrokerToken: 'YOUR_API_TOKEN',
+      publishVerificationResult: process.env.CI === 'true',
       ...
     };
   }
 ```
+
+It will publish the verification result to Pactflow when:
+- The tests are all passed
+- The command of `yarn test:pact` is running under the CI environment with `CI=true`
 
 Let's run the provider verification one last time after this change. It should now verifying your contract and update the result in Pactflow.
 

@@ -18,6 +18,7 @@ export class PactProviderConfigOptionsService
       providerVersion: '1.0.0',
       pactBrokerUrl: 'https://{YOUR_DOMAIN}.pactflow.io',
       pactBrokerToken: '',
+      publishVerificationResult: process.env.CI === 'true',
       stateHandlers: {
         'game with id 3 does not exist': async () => {
           this.gameService.clear();
